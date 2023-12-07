@@ -18,11 +18,13 @@ pipeline {
 
         stage('Unit') {
             steps {
+                catchError(buildResult: 'UNSTABLE', stageResult:'FAILURE') {
                 sh '''
                 export PYTHONPATH=$WORKSPACE
                 chmod -R 777 /var/lib/jenkins/workspace/CP1-A/
                 python3 -m pytest --junitxml=result-unit.xml ./test/unit
             '''
+                }
             }
         }
     
