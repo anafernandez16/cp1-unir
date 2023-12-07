@@ -33,7 +33,7 @@ pipeline {
                 sh '''
                     export FLASK_APP=app/api.py
                     export FLASK_ENV=development
-                    start flask run &
+                    flask run &
                     java & -jar /home/afdza/unir-devops/descargas/wiremock-standalone-3.3.1.jar --port 9090 --root-dir ./test/wiremock
                     set PYTHONPATH=$WORKSPACE
                     chmod -R 777 /var/lib/jenkins/workspace/CP1-A/
