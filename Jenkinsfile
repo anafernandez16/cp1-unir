@@ -37,7 +37,7 @@ pipeline {
                     java -jar /home/afdza/unir-devops/descargas/wiremock-standalone-3.3.1.jar --port 9090 --root-dir ./test/wiremock &
                     set PYTHONPATH=$WORKSPACE
                     chmod -R 777 /var/lib/jenkins/workspace/CP1-A/
-                    python3 -m pytest --junitxml=result-rest.xml .test/rest
+                    python3 -m pytest --junitxml=result-rest.xml ./test/rest
                 '''
             }    
         }
