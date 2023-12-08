@@ -37,11 +37,11 @@ pipeline {
                     java -jar /home/afdza/unir-devops/descargas/wiremock-standalone-3.3.1.jar --port 9090 --root-dir ./test/wiremock &
                 ''' 
                 script {
-                    def response = sh(script: 'curl -s -o /dev/null http://localhost:9090/__admin', returnStatus: true)
-                    while (response != 0) {
+                    def isUp = sh(script: 'curl -s http://localhost:9090/', returnStatus: true)
+                    while (isUp != 0) {
                         echo 'Esperando a que WireMock se levante...'
                         sleep 2
-                        response = sh(script: 'curl -s -o /dev/null http://localhost:9090/__admin', returnStatus: true)
+                        isUp = sh(script: 'curl -s http://localhost:9090/', returnStatus: true)
                     }
                 }
                   sh 'python3 -m pytest --junitxml=result-rest.xml ./test/rest'
