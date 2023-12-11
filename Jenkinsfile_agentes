@@ -27,6 +27,8 @@ pipeline {
                 agent { label 'linux' }
                     steps {
                         unstash 'test'
+                        sh 'whoami'
+                        sh 'hostname'
                         catchError(buildResult: 'UNSTABLE', stageResult:'FAILURE') {
                         sh '''
                         export PYTHONPATH=$WORKSPACE
@@ -42,6 +44,8 @@ pipeline {
                                 unstash 'test'
                                 unstash 'app'
                                 sh '''
+                                    whoami
+                                    hostname
                                     export FLASK_APP=app/api.py
                                     export FLASK_ENV=development
                                     flask run &
@@ -70,6 +74,8 @@ pipeline {
         stage('Result') {
             steps {
                 agent { label 'linux' }
+                sh 'whoami'
+                sh 'hostname'
                 unstash 'test'
                 junit 'result*.xml'
             }
