@@ -29,6 +29,7 @@ pipeline {
                         unstash 'test'
                         sh 'whoami'
                         sh 'hostname'
+                        echo WORKSPACE
                         catchError(buildResult: 'UNSTABLE', stageResult:'FAILURE') {
                         sh '''
                         export PYTHONPATH=$WORKSPACE
@@ -43,6 +44,7 @@ pipeline {
                             steps {
                                 unstash 'test'
                                 unstash 'app'
+                                echo WORKSPACE
                                 sh '''
                                     whoami
                                     hostname
@@ -74,6 +76,7 @@ pipeline {
         stage('Result') {
             steps {
                 agent { label 'linux' }
+                echo WORKSPACE
                 sh 'whoami'
                 sh 'hostname'
                 unstash 'test'
