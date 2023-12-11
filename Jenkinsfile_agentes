@@ -65,7 +65,6 @@ pipeline {
                                     }
                                 }
                                   sh 'python3 -m pytest -k "." --junitxml=result-rest.xml ./test/rest'
-                                
                             }    
                         }
             }
@@ -81,6 +80,7 @@ pipeline {
                 sh 'hostname'
                 unstash 'test'
                 junit 'result*.xml'
+                cleanWs()
             }
         }
     }
