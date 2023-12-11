@@ -80,6 +80,7 @@ pipeline {
                 sh 'whoami'
                 sh 'hostname'
                 unstash 'test'
+                ls -la
                 junit 'result*.xml'
             }
         }
