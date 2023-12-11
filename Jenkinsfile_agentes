@@ -65,8 +65,7 @@ pipeline {
                                     }
                                 }
                                   sh 'python3 -m pytest --junitxml=result-rest.xml ./test/rest'
-                                  sh 'ls -la'
-                                  echo 'aqui deberia hacer stash de los test'
+                                  stash name: 'testResult', includes: 'result-rest.xml'
                                 
                             }    
                         }
@@ -81,8 +80,7 @@ pipeline {
                 echo "Workspace: ${WORKSPACE}"
                 sh 'whoami'
                 sh 'hostname'
-                unstash 'test'
-                sh 'ls -la'
+                unstash 'testResult'
                 junit 'result*.xml'
             }
         }
