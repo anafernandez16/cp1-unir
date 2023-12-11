@@ -5,7 +5,8 @@ pipeline {
             steps {
                 cleanWs()
                 agent { label 'linux' }
-                git 'https://github.com/anafernandez16/cp1-unir.git'
+                git branch: 'develop',
+                url: 'https://github.com/anafernandez16/cp1-unir.git'
                 stash name: 'test', includes: 'test/**'
                 stash name: 'app', includes: 'app/**'
             }
