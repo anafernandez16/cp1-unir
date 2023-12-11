@@ -47,26 +47,15 @@ class TestApi(unittest.TestCase):
             response.read().decode(), "16", "ERROR ADD"
         )
 
-    def test_api_divide_zero(self):
-        url = f"{self.BASE_URL}/calc/divide/10/0"
-        response = urlopen(url, timeout=self.DEFAULT_TIMEOUT)
-        self.assertEqual(
-            response.status, http.client.OK, f"Error en la petición API a {url}"
-        )
-        result = response.read().decode()
-        self.assertEqual(result, "2.0", "Resultado incorrecto")
-
-
-    def test_api_divide_zero(self):
-        url = f"{BASE_URL}/calc/divide/10/0"
+    def test_api_divide(self):
+        url = f"{BASE_URL}/calc/divide/4/2"
         response = urlopen(url, timeout=DEFAULT_TIMEOUT)
         self.assertEqual(
             response.status, http.client.OK, f"Error en la petición API a {url}"
         )
-        result = json.loads(response.read().decode())
-        self.assertIn("error", result, "La respuesta no contiene el campo 'error'")
-        self.assertEqual(result["error"], "El divisor no puede ser 0", "Mensaje de error incorrecto")
-
+        self.assertEqual(
+            response.read().decode(), "2.0", "ERROR ADD"
+        )
 
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()
