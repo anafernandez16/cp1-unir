@@ -45,5 +45,6 @@ class TestApi(unittest.TestCase):
             response.read().decode(), "16", "ERROR ADD"
         )
 
+
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()
