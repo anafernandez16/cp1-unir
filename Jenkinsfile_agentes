@@ -14,7 +14,7 @@ pipeline {
             steps {
             agent { label 'linux' }    
             echo 'Esto es python, no se compila'
-            echo 'Workspace: ${WORKSPACE}'
+            echo "Workspace: ${WORKSPACE}"
             sh 'ls'
             sh 'whoami'
             sh 'hostname'
@@ -29,7 +29,7 @@ pipeline {
                         unstash 'test'
                         sh 'whoami'
                         sh 'hostname'
-                        echo 'Workspace: ${WORKSPACE}'
+                        echo "Workspace: ${WORKSPACE}"
                         catchError(buildResult: 'UNSTABLE', stageResult:'FAILURE') {
                         sh '''
                         export PYTHONPATH=$WORKSPACE
@@ -44,7 +44,7 @@ pipeline {
                             steps {
                                 unstash 'test'
                                 unstash 'app'
-                                echo 'Workspace: ${WORKSPACE}'
+                                echo "Workspace: ${WORKSPACE}"
                                 sh '''
                                     whoami
                                     hostname
@@ -64,7 +64,7 @@ pipeline {
 
                                     }
                                 }
-                                  sh 'python3 -m pytest -k "." --junitxml=result-rest.xml ./test/rest'
+                                  sh 'python3 -m pytest --junitxml=result-rest.xml ./test/rest'
                                 
                             }    
                         }
@@ -76,7 +76,7 @@ pipeline {
         stage('Result') {
             steps {
                 agent { label 'linux' }
-                echo 'Workspace: ${WORKSPACE}'
+                echo "Workspace: ${WORKSPACE}"
                 sh 'whoami'
                 sh 'hostname'
                 unstash 'test'
