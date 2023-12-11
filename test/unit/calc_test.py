@@ -61,6 +61,12 @@ class TestCalculate(unittest.TestCase):
         self.assertEqual(0, self.calc.substract(0, 0))
         self.assertEqual(0, self.calc.substract(0, 0))
         self.assertRaises(TypeError, self.calc.substract, "0", 0)
+
+    def test_multiply_method_returns_correct_result1(self):
+        self.assertEqual(9, self.calc.multiply(3, 3))
+        self.assertEqual(-4, self.calc.multiply(2, -2))
+        self.assertEqual(2, self.calc.multiply(2, 1))
+        self.assertEqual(15, self.calc.multiply(5, 3))   
         
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()
