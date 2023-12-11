@@ -65,6 +65,8 @@ pipeline {
                                     }
                                 }
                                   sh 'python3 -m pytest --junitxml=result-rest.xml ./test/rest'
+                                  sh 'ls -la'
+                                  echo 'aqui deberia hacer stash de los test'
                                 
                             }    
                         }
