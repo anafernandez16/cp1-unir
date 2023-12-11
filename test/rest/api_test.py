@@ -55,5 +55,13 @@ class TestApi(unittest.TestCase):
             response.read().decode(), "2.0", "ERROR ADD"
         )
 
+    def test_api_divide_zero(self):
+        url = f"{BASE_URL}/calc/divide/10/0"
+        response = urlopen(url, timeout=DEFAULT_TIMEOUT)
+        self.assertEqual(
+            response.status, http.client.BAD_REQUEST, f"Error en la petición API a {url}"
+        )
+    
+
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()
