@@ -36,6 +36,7 @@ pipeline {
                         chmod -R 777 $WORKSPACE
                         python3 -m pytest --junitxml=result-unit.xml ./test/unit
                     '''
+                    stash name: 'testResultUnit', includes: 'result-unit.xml'
                         }
                     }
                 }
@@ -65,7 +66,7 @@ pipeline {
                                     }
                                 }
                                   sh 'python3 -m pytest --junitxml=result-rest.xml ./test/rest'
-                                  stash name: 'testResult', includes: 'result-rest.xml'
+                                  stash name: 'testResultRest', includes: 'result-rest.xml'
                                 
                             }    
                         }
@@ -80,7 +81,8 @@ pipeline {
                 echo "Workspace: ${WORKSPACE}"
                 sh 'whoami'
                 sh 'hostname'
-                unstash 'testResult'
+                unstash 'testResultUnit'
+                unstash 'testResultRest'
                 junit 'result*.xml'
             }
         }
