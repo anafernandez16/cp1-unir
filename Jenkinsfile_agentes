@@ -1,9 +1,9 @@
 pipeline {
     agent any
-
     stages {
         stage('Get Code') {
             steps {
+                agent { label 'linux' }
                 git 'https://github.com/anafernandez16/cp1-unir.git'
                 stash name: 'test', includes: 'test/**'
                 stash name: 'app', includes: 'app/**'
@@ -12,6 +12,7 @@ pipeline {
         
         stage('Build') {
             steps {
+            agent { label 'linux' }    
             echo 'Esto es python, no se compila'
             echo WORKSPACE
             sh 'ls'
@@ -48,25 +49,15 @@ pipeline {
                                 ''' 
                                     
                                 script {
-                                    echo 'empieza aqui'
                                     def response = httpRequest(url: 'http://localhost:9090/__admin', validResponseCodes: '100:599')
-                                    def responseFlask = httpRequest(url: 'http://localhost:5000/', validResponseCodes: '100:599')
-                                    echo 'esto es el dolar response status de flask'
-                                    echo "${responseFlask.status}"
-                                    def responseOcho = httpRequest(url: 'http://localhost:9090/calc/sqrt/64', validResponseCodes: '100:599')
                                     while (response.status != 200) {
-                                        echo 'entramos en el while....'
                                         echo "${response.content}"
                                         echo 'Esperando a que WireMock se levante...'
                                         sleep 10
                                         response = httpRequest(url: 'http://localhost:9090/__admin', validResponseCodes: '100:599')
-                                        responseOcho = httpRequest(url: 'http://localhost:9090/calc/sqrt/64', validResponseCodes: '100:599')
-                                        echo 'Rsto tiene que ser ocho!!.'                                        
-                                        echo "${responseOcho.content}"
 
                                     }
                                 }
-                                  sh 'cd test/rest && ls -la'
                                   sh 'python3 -m pytest -k "." --junitxml=result-rest.xml ./test/rest'
                                 
                             }    
@@ -78,6 +69,7 @@ pipeline {
     
         stage('Result') {
             steps {
+                agent { label 'linux' }
                 unstash 'test'
                 junit 'result*.xml'
             }
