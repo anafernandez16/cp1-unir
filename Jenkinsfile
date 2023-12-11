@@ -23,7 +23,7 @@ pipeline {
                         catchError(buildResult: 'UNSTABLE', stageResult:'FAILURE') {
                         sh '''
                         export PYTHONPATH=$WORKSPACE
-                        chmod -R 777 /var/lib/jenkins/workspace/CP1-A/
+                        chmod -R 777 $WORKSPACE
                         python3 -m pytest --junitxml=result-unit.xml ./test/unit
                     '''
                         }
@@ -38,11 +38,13 @@ pipeline {
                                     java -jar /home/afdza/unir-devops/descargas/wiremock-standalone-3.3.1.jar --port 9090 --root-dir ./test/wiremock &
                                 ''' 
                                 script {
-                                    def response = sh(script: 'curl -s http://localhost:9090/', returnStatus: true)
-                                    while (response != 0) {
+                                    def response = httpRequest(url: 'http://localhost:9090/__admin', validResponseCodes: '100:599')
+                                    while (response.status != 200) {
+                                        echo "${response.content}"
                                         echo 'Esperando a que WireMock se levante...'
-                                        sleep 2
-                                        response = sh(script: 'curl -s http://localhost:9090/', returnStatus: true)
+                                        sleep 10
+                                        response = httpRequest(url: 'http://localhost:9090/__admin', validResponseCodes: '100:599')
+
                                     }
                                 }
                                   sh 'python3 -m pytest --junitxml=result-rest.xml ./test/rest'
