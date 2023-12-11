@@ -1,7 +1,9 @@
 import http.client
 import os
 import unittest
+import json
 from urllib.request import urlopen
+
 
 import pytest
 
@@ -59,9 +61,12 @@ class TestApi(unittest.TestCase):
         url = f"{BASE_URL}/calc/divide/10/0"
         response = urlopen(url, timeout=DEFAULT_TIMEOUT)
         self.assertEqual(
-            response.status, http.client.BAD_REQUEST, f"Error en la petición API a {url}"
+            response.status, http.client.NOT_ACCEPTABLE, f"Error en la petición API a {url}"
         )
-    
+        result = json.loads(response.read().decode())
+        self.assertIn("error", result, "La respuesta no contiene el campo 'error'")
+        self.assertEqual(result["error"], "El divisor no puede ser 0", "Mensaje de error incorrecto")
+
 
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()
