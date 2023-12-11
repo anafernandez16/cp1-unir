@@ -3,6 +3,7 @@ pipeline {
     stages {
         stage('Get Code') {
             steps {
+                cleanWs()
                 agent { label 'linux' }
                 git 'https://github.com/anafernandez16/cp1-unir.git'
                 stash name: 'test', includes: 'test/**'
@@ -84,6 +85,7 @@ pipeline {
                 unstash 'testResultUnit'
                 unstash 'testResultRest'
                 junit 'result*.xml'
+                cleanWs()
             }
         }
     }
