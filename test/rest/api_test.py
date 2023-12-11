@@ -47,15 +47,15 @@ class TestApi(unittest.TestCase):
             response.read().decode(), "16", "ERROR ADD"
         )
 
-    def test_api_divide(self):
-        url = f"{BASE_URL}/calc/divide/10/5"
-        response = urlopen(url, timeout=DEFAULT_TIMEOUT)
+    def test_api_divide_zero(self):
+        url = f"{self.BASE_URL}/calc/divide/10/0"
+        response = urlopen(url, timeout=self.DEFAULT_TIMEOUT)
         self.assertEqual(
             response.status, http.client.OK, f"Error en la petición API a {url}"
         )
-        self.assertEqual(
-            response.read().decode(), "2.0", "ERROR ADD"
-        )
+        result = response.read().decode()
+        self.assertEqual(result, "2.0", "Resultado incorrecto")
+
 
     def test_api_divide_zero(self):
         url = f"{BASE_URL}/calc/divide/10/0"
