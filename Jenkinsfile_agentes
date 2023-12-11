@@ -5,6 +5,7 @@ pipeline {
             steps {
                 agent { label 'linux' }
                 git 'https://github.com/anafernandez16/cp1-unir.git'
+                echo "Workspace: ${WORKSPACE}"
                 stash name: 'test', includes: 'test/**'
                 stash name: 'app', includes: 'app/**'
             }
@@ -14,7 +15,7 @@ pipeline {
             steps {
             agent { label 'linux' }    
             echo 'Esto es python, no se compila'
-            echo 'Workspace: ${WORKSPACE}'
+            echo "Workspace: ${WORKSPACE}"
             sh 'ls'
             sh 'whoami'
             sh 'hostname'
@@ -29,7 +30,7 @@ pipeline {
                         unstash 'test'
                         sh 'whoami'
                         sh 'hostname'
-                        echo 'Workspace: ${WORKSPACE}'
+                        echo "Workspace: ${WORKSPACE}"
                         catchError(buildResult: 'UNSTABLE', stageResult:'FAILURE') {
                         sh '''
                         export PYTHONPATH=$WORKSPACE
@@ -44,7 +45,7 @@ pipeline {
                             steps {
                                 unstash 'test'
                                 unstash 'app'
-                                echo 'Workspace: ${WORKSPACE}'
+                                echo "Workspace: ${WORKSPACE}"
                                 sh '''
                                     whoami
                                     hostname
@@ -75,7 +76,7 @@ pipeline {
         stage('Result') {
             steps {
                 agent { label 'linux' }
-                echo 'Workspace: ${WORKSPACE}'
+                echo "Workspace: ${WORKSPACE}"
                 sh 'whoami'
                 sh 'hostname'
                 unstash 'test'
