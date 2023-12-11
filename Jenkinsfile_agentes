@@ -1,0 +1,86 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Get Code') {
+            steps {
+                git 'https://github.com/anafernandez16/cp1-unir.git'
+                stash name: 'test', includes: 'test/**'
+                stash name: 'app', includes: 'app/**'
+            }
+        }
+        
+        stage('Build') {
+            steps {
+            echo 'Esto es python, no se compila'
+            echo WORKSPACE
+            sh 'ls'
+            sh 'whoami'
+            sh 'hostname'
+            }
+        }
+        
+        stage('Tests') {
+            parallel {
+                stage('Unit') {
+                agent { label 'linux' }
+                    steps {
+                        unstash 'test'
+                        catchError(buildResult: 'UNSTABLE', stageResult:'FAILURE') {
+                        sh '''
+                        export PYTHONPATH=$WORKSPACE
+                        chmod -R 777 $WORKSPACE
+                        python3 -m pytest --junitxml=result-unit.xml ./test/unit
+                    '''
+                        }
+                    }
+                }
+                stage('Rest') {
+                agent { label 'rest' }
+                            steps {
+                                unstash 'test'
+                                unstash 'app'
+                                sh '''
+                                    export FLASK_APP=app/api.py
+                                    export FLASK_ENV=development
+                                    flask run &
+                                    java -jar /home/afdza/unir-devops/descargas/wiremock-standalone-3.3.1.jar --port 9090 --root-dir ./test/wiremock &
+                                ''' 
+                                    
+                                script {
+                                    echo 'empieza aqui'
+                                    def response = httpRequest(url: 'http://localhost:9090/__admin', validResponseCodes: '100:599')
+                                    def responseFlask = httpRequest(url: 'http://localhost:5000/', validResponseCodes: '100:599')
+                                    echo 'esto es el dolar response status de flask'
+                                    echo "${responseFlask.status}"
+                                    def responseOcho = httpRequest(url: 'http://localhost:9090/calc/sqrt/64', validResponseCodes: '100:599')
+                                    while (response.status != 200) {
+                                        echo 'entramos en el while....'
+                                        echo "${response.content}"
+                                        echo 'Esperando a que WireMock se levante...'
+                                        sleep 10
+                                        response = httpRequest(url: 'http://localhost:9090/__admin', validResponseCodes: '100:599')
+                                        responseOcho = httpRequest(url: 'http://localhost:9090/calc/sqrt/64', validResponseCodes: '100:599')
+                                        echo 'Rsto tiene que ser ocho!!.'                                        
+                                        echo "${responseOcho.content}"
+
+                                    }
+                                }
+                                  sh 'cd test/rest && ls -la'
+                                  sh 'python3 -m pytest -k "." --junitxml=result-rest.xml ./test/rest'
+                                
+                            }    
+                        }
+            }
+
+        }
+        
+    
+        stage('Result') {
+            steps {
+                unstash 'test'
+                junit 'result*.xml'
+            }
+        }
+    }
+}
