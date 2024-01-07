@@ -2,3 +2,4 @@ result.xml
 __pycache__
 .pytest_cache
 result-unit.xml
+.coverage
