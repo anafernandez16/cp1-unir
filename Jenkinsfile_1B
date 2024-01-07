@@ -56,6 +56,15 @@ pipeline {
                 recordIssues tools: [flake8(name: 'Flake8', pattern: 'flake8.out')], qualityGates : [[threshold: 8, type: 'TOTAL', unstable: true], [threshold: 10, type: 'TOTAL', unstable: false]]            
                 }
     }
+
+        stage('Security') {
+        steps {
+            sh '''
+            bandit -r . -f custom -o bandit.out -ll --msg-template "{abspath}:{line}:{severity}:{test_id}:{msg}" || true
+            '''
+            recordIssues tools: [pyLint(name: 'Bandit', pattern: 'bandit.out')], qualityGates : [[threshold: 2, type: 'TOTAL', unstable: true], [threshold: 4, type: 'TOTAL', unstable: false]] 
+        }
+    }
         
     
     }
