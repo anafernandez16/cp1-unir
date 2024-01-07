@@ -4,8 +4,8 @@ pipeline {
     stages {
         stage('Get Code') {
             steps {
-                git 'https://github.com/anafernandez16/cp1-unir.git'
                 cleanWs()
+                git 'https://github.com/anafernandez16/cp1-unir.git'
             }
         }
 
