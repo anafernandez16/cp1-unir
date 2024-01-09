@@ -8,13 +8,26 @@ pipeline {
                 git 'https://github.com/anafernandez16/cp1-unir.git'
             }
         }
-
+        stage('Cobertura') {
+        steps {
+            sh '''
+            export PYTHONPATH=$WORKSPACE
+            chmod -R 777 $WORKSPACE
+            coverage run --source=app --omit=app/__init__.py,app/api.py -m pytest test/unit --junitxml=result-unit.xml 
+            coverage xml
+            '''
+            cobertura coberturaReportFile: 'coverage.xml', conditionalCoverageTargets: '100, 80, 90', lineCoverageTargets: '100, 85, 95', failUnstable: false
+            }
+        }
+        stage('Unit') {
+            steps {
+                junit 'result*.xml'
+            }
+        }
 
         stage('Rest') {
             steps {
                 sh '''
-                    export PYTHONPATH=$WORKSPACE
-                    chmod -R 777 $WORKSPACE
                     export FLASK_APP=app/api.py
                     export FLASK_ENV=development
                     flask run &
@@ -47,23 +60,8 @@ pipeline {
             sh '''
             bandit -r . -f custom -o bandit.out -ll --msg-template "{path}:{line}: [{test_id}, {severity}] {msg}"  --exit-zero
             '''
-            recordIssues tools: [pyLint(name: 'Bandit', pattern: 'bandit.out')], qualityGates : [[threshold: 2, type: 'TOTAL', unstable: true], [threshold: 4, type: 'TOTAL', unstable: false]] 
+            recordIssues qualityGates: [[threshold: 2, type: 'TOTAL', unstable: true], [threshold: 4, type: 'TOTAL', unstable: false]], tools: [pyLint(name: 'Bandit', pattern: 'bandit.out')]
         }
-        }
-
-        stage('Cobertura') {
-            steps {
-                sh '''
-                coverage run --source=app --omit=app/__init__.py,app/api.py -m pytest test/unit --junitxml=result-unit.xml 
-                coverage xml
-                '''
-                cobertura coberturaReportFile: 'coverage.xml', conditionalCoverageTargets: '100, 80, 90', lineCoverageTargets: '100, 85, 95', failUnstable: false
-            }
-        }
-        stage('Unit') {
-            steps {
-                junit 'result*.xml'
-            }
         }
         
     
