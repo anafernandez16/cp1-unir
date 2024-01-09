@@ -9,46 +9,30 @@ pipeline {
             }
         }
 
-        stage('Tests') {
-            parallel {
-                stage('Unit') {
-                    steps {
-                        catchError(buildResult: 'UNSTABLE', stageResult:'FAILURE') {
-                        sh '''
-                        export PYTHONPATH=$WORKSPACE
-                        chmod -R 777 $WORKSPACE
-                        python3 -m pytest --junitxml=result-unit.xml ./test/unit
-                    '''
-                        }
+
+        stage('Rest') {
+            steps {
+                sh '''
+                    export PYTHONPATH=$WORKSPACE
+                    chmod -R 777 $WORKSPACE
+                    export FLASK_APP=app/api.py
+                    export FLASK_ENV=development
+                    flask run &
+                    java -jar /home/afdza/unir-devops/descargas/wiremock-standalone-3.3.1.jar --port 9090 --root-dir ./test/wiremock &
+                ''' 
+                script {
+                    def response = httpRequest(url: 'http://localhost:9090/__admin', validResponseCodes: '100:599')
+                    while (response.status != 200) {
+                        echo "${response.content}"
+                        echo 'Esperando a que WireMock se levante...'
+                        sleep 10
+                        response = httpRequest(url: 'http://localhost:9090/__admin', validResponseCodes: '100:599')
                     }
                 }
-                stage('Rest') {
-                            steps {
-                                sh '''
-                                    export FLASK_APP=app/api.py
-                                    export FLASK_ENV=development
-                                    flask run &
-                                    java -jar /home/afdza/unir-devops/descargas/wiremock-standalone-3.3.1.jar --port 9090 --root-dir ./test/wiremock &
-                                ''' 
-                                script {
-                                    def response = httpRequest(url: 'http://localhost:9090/__admin', validResponseCodes: '100:599')
-                                    while (response.status != 200) {
-                                        echo "${response.content}"
-                                        echo 'Esperando a que WireMock se levante...'
-                                        sleep 10
-                                        response = httpRequest(url: 'http://localhost:9090/__admin', validResponseCodes: '100:599')
-
-                                    }
-                                }
-                                  sh 'python3 -m pytest --junitxml=result-rest.xml ./test/rest'
-                                
-                            }    
-                        }
-            }
-
+                sh 'python3 -m pytest --junitxml=result-rest.xml ./test/rest'
+            }    
         }
-        
-        
+    
         stage('Static') {
             steps {
                 sh '''
@@ -56,24 +40,29 @@ pipeline {
                 '''
                 recordIssues tools: [flake8(name: 'Flake8', pattern: 'flake8.out')], qualityGates : [[threshold: 8, type: 'TOTAL', unstable: true], [threshold: 10, type: 'TOTAL', unstable: false]]            
                 }
-    }
+        }
 
         stage('Security') {
         steps {
             sh '''
-            bandit -r . -f custom -o bandit.out -ll --msg-template "{abspath}:{line}:{severity}:{test_id}:{msg}" --exit-zero
+            bandit -r . -f custom -o bandit.out -ll --msg-template "{path}:{line}: [{test_id}, {severity}] {msg}"  --exit-zero
             '''
             recordIssues tools: [pyLint(name: 'Bandit', pattern: 'bandit.out')], qualityGates : [[threshold: 2, type: 'TOTAL', unstable: true], [threshold: 4, type: 'TOTAL', unstable: false]] 
         }
-    }
+        }
 
         stage('Cobertura') {
             steps {
                 sh '''
-                coverage run --source=app --omit=app/__init__.py,app/api.py -m pytest test/unit
+                coverage run --source=app --omit=app/__init__.py,app/api.py -m pytest test/unit --junitxml=result-unit.xml 
                 coverage xml
                 '''
                 cobertura coberturaReportFile: 'coverage.xml', conditionalCoverageTargets: '100, 80, 90', lineCoverageTargets: '100, 85, 95', failUnstable: false
+            }
+        }
+        stage('Unit') {
+            steps {
+                junit 'result*.xml'
             }
         }
         
