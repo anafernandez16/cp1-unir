@@ -5,25 +5,21 @@ pipeline {
         stage('Get Code') {
             steps {
                 cleanWs()
-                git 'https://github.com/anafernandez16/cp1-unir.git'
+                // git 'https://github.com/anafernandez16/cp1-unir.git'
             }
         }
-        stage('Cobertura') {
-        steps {
-            sh '''
-            export PYTHONPATH=$WORKSPACE
-            chmod -R 777 $WORKSPACE
-            coverage run --source=app --omit=app/__init__.py,app/api.py -m pytest test/unit --junitxml=result-unit.xml 
-            coverage xml
-            '''
-            cobertura coberturaReportFile: 'coverage.xml', conditionalCoverageTargets: '100, 80, 90', lineCoverageTargets: '100, 85, 95', failUnstable: false
-            }
-        }
+
         stage('Unit') {
             steps {
+                sh '''
+                    export PYTHONPATH=$WORKSPACE
+                    chmod -R 777 $WORKSPACE
+                    coverage run --source=app --omit=app/__init__.py,app/api.py -m pytest test/unit --junitxml=result-unit.xml 
+                '''
                 junit 'result*.xml'
             }
         }
+
 
         stage('Rest') {
             steps {
@@ -54,15 +50,26 @@ pipeline {
                 recordIssues tools: [flake8(name: 'Flake8', pattern: 'flake8.out')], qualityGates : [[threshold: 8, type: 'TOTAL', unstable: true], [threshold: 10, type: 'TOTAL', unstable: false]]            
                 }
         }
+    
+        stage('Cobertura') {
+            steps {
+                sh '''
+                coverage xml
+                '''
+                cobertura coberturaReportFile: 'coverage.xml', conditionalCoverageTargets: '100, 80, 90', lineCoverageTargets: '100, 85, 95', failUnstable: false
+                }
+            }
 
         stage('Security') {
-        steps {
-            sh '''
-            bandit -r . -f custom -o bandit.out -ll --msg-template "{path}:{line}: [{test_id}, {severity}] {msg}"  --exit-zero
-            '''
-            recordIssues qualityGates: [[threshold: 2, type: 'TOTAL', unstable: true], [threshold: 4, type: 'TOTAL', unstable: false]], tools: [pyLint(name: 'Bandit', pattern: 'bandit.out')]
+            steps {
+                sh '''
+                bandit --exit-zero -r . -f custom -o bandit.out -ll --msg-template "{path}:{line}: [{test_id}, {severity}] {msg}"  
+                '''
+                recordIssues tools: [pyLint(name: 'Bandit', pattern: 'bandit.out')], qualityGates: [[threshold: 2, type: 'TOTAL', unstable: true], [threshold: 4, type: 'TOTAL', unstable: false]]
+            }
         }
-        }
+
+
         
     
     }

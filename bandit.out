@@ -1,0 +1,2 @@
+/home/afdza/unir-devops/cp1/cp1-unir/test/rest/api_test.py:20:MEDIUM:B310:Audit url open for permitted schemes. Allowing use of file:/ or custom schemes is often unexpected.
+/home/afdza/unir-devops/cp1/cp1-unir/test/rest/api_test.py:30:MEDIUM:B310:Audit url open for permitted schemes. Allowing use of file:/ or custom schemes is often unexpected.
