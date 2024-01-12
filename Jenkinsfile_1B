@@ -56,22 +56,37 @@ pipeline {
                 sh '''
                 coverage xml
                 '''
-                cobertura coberturaReportFile: 'coverage.xml', conditionalCoverageTargets: '100, 80, 90', lineCoverageTargets: '100, 85, 95', failUnstable: false
+                cobertura coberturaReportFile: 'coverage.xml', conditionalCoverageTargets: '100, 80, 90', lineCoverageTargets: '100, 85, 95', failUnstable: false, onlyStable: false
                 }
             }
 
         stage('Security') {
             steps {
                 sh '''
-                bandit --exit-zero -r . -f custom -o bandit.out -ll --msg-template "{path}:{line}: [{test_id}, {severity}] {msg}"  
+                bandit --exit-zero -r . -f custom -o bandit.out -ll --msg-template="{path}:{line}: [{test_id}, {severity}] {msg}"  
                 '''
                 recordIssues tools: [pyLint(name: 'Bandit', pattern: 'bandit.out')], qualityGates: [[threshold: 2, type: 'TOTAL', unstable: true], [threshold: 4, type: 'TOTAL', unstable: false]]
-                cleanWs()
+                
             }
         }
 
+        stage('Performance') {
+            steps {
+                sh '''
+                    export FLASK_APP=app/api.py
+                    export FLASK_ENV=development
+                    flask run &
+                    /home/afdza/apache-jmeter/bin/jmeter -n -t test/jmeter/test-jmeter.jmx -f -l flask.jtl
+                '''        
+                perfReport sourceDataFiles : 'flask.jtl'
+            }
+        }
 
-        
+        stage ('Finalizer') {
+            steps {
+                cleanWs()
+            }
+        }
     
     }
 }
