@@ -5,7 +5,7 @@ pipeline {
         stage('Get Code') {
             agent { label 'linux' }
             steps {
-                git 'https://github.com/anafernandez16/cp1-unir.git'
+                //git 'https://github.com/anafernandez16/cp1-unir.git'
                 echo "Workspace: ${WORKSPACE}"
                 sh 'whoami'
                 sh 'hostname'
