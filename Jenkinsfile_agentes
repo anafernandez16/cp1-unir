@@ -1,91 +1,128 @@
 pipeline {
-    agent any
+    agent none
+
     stages {
         stage('Get Code') {
+            agent { label 'linux' }
             steps {
-                agent { label 'linux' }
                 git 'https://github.com/anafernandez16/cp1-unir.git'
                 echo "Workspace: ${WORKSPACE}"
+                sh 'whoami'
+                sh 'hostname'
                 stash name: 'test', includes: 'test/**'
                 stash name: 'app', includes: 'app/**'
             }
         }
-        
-        stage('Build') {
-            steps {
-            agent { label 'linux' }    
-            echo 'Esto es python, no se compila'
-            echo "Workspace: ${WORKSPACE}"
-            sh 'ls'
-            sh 'whoami'
-            sh 'hostname'
-            }
-        }
+
         
         stage('Tests') {
             parallel {
                 stage('Unit') {
-                agent { label 'linux' }
+                    agent { label 'unit' }
                     steps {
-                        unstash 'test'
+                        echo "Workspace: ${WORKSPACE}"
                         sh 'whoami'
                         sh 'hostname'
-                        echo "Workspace: ${WORKSPACE}"
-                        catchError(buildResult: 'UNSTABLE', stageResult:'FAILURE') {
+                        unstash 'test'
                         sh '''
-                        export PYTHONPATH=$WORKSPACE
-                        chmod -R 777 $WORKSPACE
-                        python3 -m pytest --junitxml=result-unit.xml ./test/unit
-                    '''
-                    stash name: 'testResultUnit', includes: 'result-unit.xml'
-                        }
+                            export PYTHONPATH=$WORKSPACE
+                            chmod -R 777 $WORKSPACE
+                            ls -la
+                            coverage run --source=app --omit=app/__init__.py,app/api.py -m pytest test/unit --junitxml=result-unit.xml 
+                            '''
+                        junit 'result*.xml'
+                        stash name: 'coverage', includes: '.coverage'
+
                     }
                 }
+
                 stage('Rest') {
-                agent { label 'rest' }
-                            steps {
-                                unstash 'test'
-                                unstash 'app'
-                                echo "Workspace: ${WORKSPACE}"
-                                sh '''
-                                    whoami
-                                    hostname
-                                    export FLASK_APP=app/api.py
-                                    export FLASK_ENV=development
-                                    flask run &
-                                    java -jar /home/afdza/unir-devops/descargas/wiremock-standalone-3.3.1.jar --port 9090 --root-dir ./test/wiremock &
-                                ''' 
-                                    
-                                script {
-                                    def response = httpRequest(url: 'http://localhost:9090/__admin', validResponseCodes: '100:599')
-                                    while (response.status != 200) {
-                                        echo "${response.content}"
-                                        echo 'Esperando a que WireMock se levante...'
-                                        sleep 10
-                                        response = httpRequest(url: 'http://localhost:9090/__admin', validResponseCodes: '100:599')
-
-                                    }
-                                }
-                                  sh 'python3 -m pytest  --junitxml=result-rest.xml ./test/rest'
-                                  stash name: 'testResultRest', includes: 'result-rest.xml'
-                            }    
+                    agent { label 'rest' }
+                    steps {
+                        echo "Workspace: ${WORKSPACE}"
+                        sh 'whoami'
+                        sh 'hostname'
+                        unstash 'test'
+                        unstash 'app'
+                        sh '''
+                            export FLASK_APP=app/api.py
+                            export FLASK_ENV=development
+                            flask run &
+                            java -jar /home/afdza/unir-devops/descargas/wiremock-standalone-3.3.1.jar --port 9090 --root-dir ./test/wiremock &
+                        ''' 
+                        script {
+                            def response = httpRequest(url: 'http://localhost:9090/__admin', validResponseCodes: '100:599')
+                            while (response.status != 200) {
+                                echo "${response.content}"
+                                echo 'Esperando a que WireMock se levante...'
+                                sleep 10
+                                response = httpRequest(url: 'http://localhost:9090/__admin', validResponseCodes: '100:599')
+                            }
                         }
-            }
+                        sh 'python3 -m pytest --junitxml=result-rest.xml ./test/rest'
+                    }    
+                }
 
+                stage('Static') {
+                    agent { label 'pylint' }
+                    steps {
+                    echo "Workspace: ${WORKSPACE}"
+                    sh 'whoami'
+                    sh 'hostname'
+                    unstash 'app'
+                        sh '''
+                        flake8 --format=pylint --exit-zero app >flake8.out
+                        '''
+                        recordIssues tools: [flake8(name: 'Flake8', pattern: 'flake8.out')], qualityGates : [[threshold: 8, type: 'TOTAL', unstable: true], [threshold: 10, type: 'TOTAL', unstable: false]]            
+                        }
+                }
+
+                stage('Cobertura') {
+                    agent { label 'pylint' }
+                    steps {
+                        echo "Workspace: ${WORKSPACE}"
+                        sh 'whoami'
+                        sh 'hostname'
+                        unstash 'coverage'
+                        sh 'ls -la'
+                        sh '''
+                        coverage xml
+                        '''
+                        cobertura coberturaReportFile: 'coverage.xml', conditionalCoverageTargets: '100, 80, 90', lineCoverageTargets: '100, 85, 95', failUnstable: false, onlyStable: false
+                        }
+                    }
+
+                stage('Security') {
+                    agent { label 'linux' }
+                    steps {
+                        echo "Workspace: ${WORKSPACE}"
+                        sh 'whoami'
+                        sh 'hostname'
+                        sh '''
+                        bandit --exit-zero -r . -f custom -o bandit.out -ll --msg-template="{relpath}:{line}: [{test_id}, {severity}] {msg}"  
+                        '''
+                        recordIssues tools: [pyLint(name: 'Bandit', pattern: 'bandit.out')], qualityGates: [[threshold: 2, type: 'TOTAL', unstable: true], [threshold: 4, type: 'TOTAL', unstable: false]]
+                        cleanWs()
+                    }
+                }
+
+            }
         }
         
-    
-        stage('Result') {
+        stage('Performance') {
+            agent { label 'flask' }
             steps {
-                agent { label 'linux' }
-                echo "Workspace: ${WORKSPACE}"
-                sh 'whoami'
-                sh 'hostname'
-                unstash 'testResultUnit'
-                unstash 'testResultRest'
-                junit 'result*.xml'
+                unstash 'test'
+                unstash 'app'
+                sh '''
+                    export FLASK_APP=app/api.py
+                    export FLASK_ENV=development
+                    flask run &
+                    /home/afdza/apache-jmeter/bin/jmeter -n -t test/jmeter/test-jmeter.jmx -f -l flask.jtl
+                '''        
+                perfReport sourceDataFiles : 'flask.jtl'
                 cleanWs()
             }
-        }
+        }    
     }
 }
